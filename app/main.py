@@ -17,10 +17,11 @@ import json
 from pathlib import Path
 
 import numpy as np
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image
+from starlette.middleware.base import BaseHTTPMiddleware
 
 import tensorflow as tf
 
@@ -29,6 +30,24 @@ MODELS = ROOT / "models"
 STATIC = ROOT / "static"
 
 app = FastAPI(title="NeuraNetViz", version="0.1.0")
+
+
+class ShortCacheStatic(BaseHTTPMiddleware):
+    """Cap static-asset cache TTL so iterating on the UI doesn't get stuck behind
+    Cloudflare's default cache. 60s is long enough that hot reloads still benefit
+    from edge caching, short enough that pushes go live within a minute."""
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        path = request.url.path
+        if path.startswith("/static/"):
+            response.headers["Cache-Control"] = "public, max-age=60"
+        elif path in {"/", "/training"}:
+            response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
+app.add_middleware(ShortCacheStatic)
 
 # ---------------------------------------------------------------------------
 # Model loading (lazy)
