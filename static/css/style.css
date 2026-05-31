@@ -91,33 +91,19 @@ h1, h2, h3, h4 { font-family: var(--cv-font-heading); font-weight: 600; margin: 
 
 nav { display: flex; gap: 22px; align-items: center; }
 
-.mode-toggle {
+.model-badge {
   display: inline-flex;
-  border: 1px solid var(--cv-border-strong);
+  align-items: center;
+  padding: 6px 14px;
+  border: 1px solid var(--cv-accent);
+  background: var(--cv-accent-muted);
   border-radius: 999px;
-  background: var(--cv-bg-overlay);
-  padding: 3px;
-  margin-right: 8px;
-}
-.mode-toggle .mode-opt {
-  background: transparent;
-  border: none;
-  color: var(--cv-text-muted);
+  color: var(--cv-accent);
   font-family: var(--cv-font-heading);
-  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
   font-weight: 600;
-  padding: 7px 14px;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: all .15s;
+  cursor: help;
 }
-.mode-toggle .mode-opt:hover { color: var(--cv-text); }
-.mode-toggle .mode-opt.active {
-  background: var(--cv-accent);
-  color: #1e1e1e;
-  box-shadow: 0 0 14px rgba(40,214,0,0.45);
-}
-.mode-toggle .mode-opt[disabled] { opacity: 0.5; cursor: wait; }
 
 .imagenet-top {
   list-style: none; padding: 0; margin: 0;
@@ -161,7 +147,6 @@ main {
   gap: 18px;
   padding: 24px 32px;
 }
-.training-main { display: block; padding: 24px 32px; }
 
 .panel {
   background: var(--cv-bg-elevated);
@@ -259,36 +244,8 @@ main {
 }
 .net-header .panel-title { margin: 0; }
 
-.view-toggle {
-  display: inline-flex;
-  border: 1px solid var(--cv-border-strong);
-  border-radius: 999px;
-  background: var(--cv-bg-overlay);
-  padding: 3px;
-}
-.view-toggle .view-opt {
-  background: transparent;
-  border: none;
-  color: var(--cv-text-muted);
-  font-family: var(--cv-font-heading);
-  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
-  font-weight: 600;
-  padding: 5px 14px;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: all .15s;
-}
-.view-toggle .view-opt:hover { color: var(--cv-text); }
-.view-toggle .view-opt.active {
-  background: var(--cv-accent);
-  color: #1e1e1e;
-  box-shadow: 0 0 12px rgba(40,214,0,0.45);
-}
-
-/* Both 2D and 3D render into THIS rectangle. Fixed aspect ratio guarantees
-   they end up the same size on screen — switching modes is a true swap, not a
-   resize. The aspect 16:10 matches the 2D SVG viewBox (960x600) so the SVG
-   fills without whitespace and the 3D canvas gets the same proportions. */
+/* The network SVG renders into THIS rectangle. Fixed aspect 16:10 matches
+   the SVG viewBox so it fills cleanly without whitespace bands. */
 .net-stage {
   position: relative;
   width: 100%;
@@ -300,39 +257,11 @@ main {
   overflow: hidden;
 }
 
-#network, #network3d {
+#network {
   position: absolute; inset: 0;
-  display: none;
   width: 100%; height: 100%;
-}
-.net-stage[data-view="2d"] #network,
-.net-stage:not([data-view]) #network { display: block; }
-.net-stage[data-view="3d"] #network3d { display: block; }
-#network3d canvas {
   display: block;
-  width: 100% !important;
-  height: 100% !important;
 }
-
-.net3d-hint {
-  position: absolute;
-  bottom: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: rgba(15, 18, 24, 0.85);
-  border: 1px solid var(--cv-border-strong);
-  font-family: var(--cv-font-mono);
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  color: var(--cv-text-muted);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.2s;
-  z-index: 5;
-}
-.net-stage[data-view="3d"] .net3d-hint { opacity: 1; }
 
 #network .node {
   cursor: pointer;
@@ -500,65 +429,6 @@ footer a:hover { color: var(--cv-accent-hover); }
   font-family: var(--cv-font-heading);
   font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 500;
 }
-
-/* ----- training page ----- */
-.train-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
-  margin-top: 18px;
-}
-.train-chart canvas {
-  width: 100%; height: 240px;
-  background: var(--cv-bg);
-  border: 1px solid var(--cv-border); border-radius: 8px;
-}
-.train-controls {
-  display: flex; gap: 12px; align-items: center;
-  margin-top: 18px; padding-top: 14px;
-  border-top: 1px solid var(--cv-border);
-}
-.train-controls button {
-  background: var(--cv-accent);
-  border: none;
-  color: #1e1e1e;
-  padding: 10px 22px;
-  font-family: var(--cv-font-heading);
-  font-size: 11px; letter-spacing: 0.18em;
-  font-weight: 600; cursor: pointer; border-radius: 999px;
-  text-transform: uppercase;
-  transition: all .15s;
-}
-.train-controls button:hover {
-  background: var(--cv-accent-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--cv-glow);
-}
-.train-controls button:last-of-type {
-  background: transparent; color: var(--cv-text);
-  border: 1px solid var(--cv-border-strong);
-}
-.train-controls button:last-of-type:hover {
-  border-color: var(--cv-accent); color: var(--cv-accent);
-  background: transparent; box-shadow: none;
-}
-
-.train-epoch-table { margin-top: 22px; overflow-x: auto; }
-#epoch-table {
-  width: 100%; border-collapse: collapse;
-  font-family: var(--cv-font-mono);
-  font-size: 12px;
-}
-#epoch-table th, #epoch-table td {
-  padding: 9px 12px; border-bottom: 1px solid var(--cv-border);
-  text-align: right; font-variant-numeric: tabular-nums;
-}
-#epoch-table th {
-  color: var(--cv-accent);
-  font-family: var(--cv-font-heading);
-  text-transform: uppercase; letter-spacing: 0.12em;
-  font-size: 10px; font-weight: 600;
-  text-align: right;
-}
-#epoch-table th:first-child, #epoch-table td:first-child { text-align: left; }
 
 /* ----- responsive ----- */
 @media (max-width: 1100px) {

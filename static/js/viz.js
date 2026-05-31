@@ -9,21 +9,17 @@
   const fmEl = $("featuremaps");
   const svg = $("network");
   const samples = $("samples");
-  const modeToggle = $("mode-toggle");
   const imagenetTitle = $("imagenet-title");
   const imagenetEl = $("imagenet-top");
   const tooltip = $("node-tooltip");
 
   const SVG_NS = "http://www.w3.org/2000/svg";
+  const MODE = "pretrained"; // only mode the UI exposes; backend still supports the others
 
   let arch = null;
   let nodes = []; // {layer, x, y, type}
-  let mode = "teaching";
-  let view = "2d";
   let lastUploadedBlob = null;
   let lastPrediction = null; // {predictions, layers}
-  const viewToggle = $("view-toggle");
-  const stage = document.querySelector(".net-stage");
 
   // ----- color per layer type (CV brand) -----
   // Verde Ascensão #28d600 is the accent; dim shades distinguish other types
@@ -42,7 +38,7 @@
 
   // ----- build the SVG network diagram -----
   async function buildNetwork() {
-    const resp = await fetch(`/api/architecture?mode=${mode}`);
+    const resp = await fetch(`/api/architecture?mode=${MODE}`);
     arch = await resp.json();
     drawNetwork(arch);
   }
@@ -340,7 +336,7 @@
 
     setStatus("running forward pass…", "busy");
     const animPromise = animateForward();
-    const resp = await fetch(`/api/predict?mode=${mode}`, { method: "POST", body: fd });
+    const resp = await fetch(`/api/predict?mode=${MODE}`, { method: "POST", body: fd });
     if (!resp.ok) {
       const t = await resp.text();
       setStatus(`error: ${t}`, "err");
@@ -353,15 +349,13 @@
     if (data.preview) {
       preview.src = data.preview;
       dz.classList.add("has-image");
-      if (window.NNV3D) window.NNV3D.setInputImage(data.preview);
     }
     renderPredictions(data.predictions);
     renderFeatureMaps(data.layers);
     renderImagenetTop(data.imagenet_top);
     paintNodeScores(data);
-    if (window.NNV3D && view === "3d") window.NNV3D.updateScores(nodes, data, arch);
     hideTooltip();
-    setStatus(`predicted ${data.predictions[0].label} (${(data.predictions[0].prob*100).toFixed(1)}%) · ${mode}`, "ok");
+    setStatus(`predicted ${data.predictions[0].label} (${(data.predictions[0].prob*100).toFixed(1)}%)`, "ok");
   }
 
   function setStatus(msg, cls) {
@@ -412,31 +406,6 @@
       imagenetEl.appendChild(li);
     });
   }
-
-  // ----- mode toggle -----
-  async function switchMode(newMode) {
-    if (newMode === mode) return;
-    mode = newMode;
-    modeToggle.querySelectorAll(".mode-opt").forEach((b) => {
-      b.classList.toggle("active", b.dataset.mode === mode);
-      b.setAttribute("aria-selected", b.dataset.mode === mode ? "true" : "false");
-      b.disabled = true;
-    });
-    setStatus(`loading ${mode} model…`, "busy");
-    try {
-      await buildNetwork();
-      if (view === "3d" && window.NNV3D) window.NNV3D.mount("network3d", arch);
-      setStatus(`${mode} model ready · ${arch.input_size}×${arch.input_size} input`, "ok");
-      if (lastUploadedBlob) await predict(lastUploadedBlob);
-    } catch (e) {
-      setStatus(`failed to switch mode: ${e.message}`, "err");
-    } finally {
-      modeToggle.querySelectorAll(".mode-opt").forEach((b) => (b.disabled = false));
-    }
-  }
-  modeToggle.querySelectorAll(".mode-opt").forEach((b) => {
-    b.addEventListener("click", () => switchMode(b.dataset.mode));
-  });
 
   // ----- sample buttons -----
   const SAMPLES = ["bird","cat","deer","dog","frog","horse"];
@@ -640,28 +609,6 @@
     const mg = Math.round(0x1e + (g - 0x1e) * t);
     const mb = Math.round(0x1e + (b - 0x1e) * t);
     return `rgb(${mr}, ${mg}, ${mb})`;
-  }
-
-  // ----- 2D / 3D view toggle -----
-  async function switchView(newView) {
-    if (newView === view) return;
-    view = newView;
-    stage.setAttribute("data-view", view);
-    viewToggle.querySelectorAll(".view-opt").forEach((b) => {
-      b.classList.toggle("active", b.dataset.view === view);
-      b.setAttribute("aria-selected", b.dataset.view === view ? "true" : "false");
-    });
-    if (view === "3d" && window.NNV3D) {
-      window.NNV3D.mount("network3d", arch);
-      if (lastPrediction) window.NNV3D.updateScores(nodes, lastPrediction, arch);
-    } else if (view === "2d" && window.NNV3D) {
-      window.NNV3D.pause();
-    }
-  }
-  if (viewToggle) {
-    viewToggle.querySelectorAll(".view-opt").forEach((b) => {
-      b.addEventListener("click", () => switchView(b.dataset.view));
-    });
   }
 
   // ----- init -----

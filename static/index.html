@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>NeuraNetViz · Live Neural Network Visualizer · Cleber Visconti</title>
   <link rel="icon" type="image/png" href="/static/img/cv-monogram.png">
-  <link rel="stylesheet" href="/static/css/style.css?v=2">
+  <link rel="stylesheet" href="/static/css/style.css?v=9">
 </head>
 <body class="cv-theme">
   <canvas id="bgfx"></canvas>
@@ -19,13 +19,9 @@
       <span class="product">NEURA<span class="accent">NET</span>VIZ</span>
     </div>
     <nav>
-      <div class="mode-toggle" id="mode-toggle" role="tablist" aria-label="Model mode">
-        <button class="mode-opt active" data-mode="teaching" role="tab" aria-selected="true" title="Small CNN trained from scratch on 32x32 CIFAR-10. Pedagogy first.">Teaching · CIFAR-10</button>
-        <button class="mode-opt" data-mode="finetuned" role="tab" aria-selected="false" title="MobileNetV2 fine-tuned locally on the 6 CIFAR-10 animals @ 96x96. Direct 6-way output.">Fine-tuned · MobileNetV2</button>
-        <button class="mode-opt" data-mode="pretrained" role="tab" aria-selected="false" title="MobileNetV2 ImageNet weights @ 224x224; 1000-way softmax aggregated into 6 buckets. Best on real photos.">Pretrained · ImageNet</button>
-      </div>
-      <a class="nav-link active" href="/">Inference</a>
-      <a class="nav-link" href="/training">Training</a>
+      <span class="model-badge" title="MobileNetV2 with ImageNet weights @ 224×224; 1000-way softmax aggregated into 6 animal buckets.">
+        Pretrained · ImageNet
+      </span>
       <a class="nav-link" href="https://github.com/clebervisconti/neuralnetviz" target="_blank" rel="noopener">GitHub</a>
     </nav>
   </header>
@@ -53,18 +49,10 @@
     <section class="panel center" id="network-wrap">
       <div class="net-header">
         <h2 class="panel-title">// NETWORK</h2>
-        <div class="view-toggle" id="view-toggle" role="tablist" aria-label="Network view">
-          <button class="view-opt active" data-view="2d" role="tab" aria-selected="true">2D</button>
-          <button class="view-opt" data-view="3d" role="tab" aria-selected="false">3D</button>
-        </div>
       </div>
-      <div class="net-stage" data-view="2d">
+      <div class="net-stage">
         <svg id="network" preserveAspectRatio="xMidYMid meet"></svg>
-        <div id="network3d"></div>
         <div id="node-tooltip" class="node-tooltip" role="tooltip" aria-hidden="true"></div>
-        <div id="net3d-hint" class="net3d-hint">
-          drag to rotate · scroll to zoom · right-drag to pan
-        </div>
       </div>
       <div class="legend">
         <span><i class="dot c-input"></i>input</span>
@@ -93,10 +81,7 @@
     <span>cleber visconti · ai/ml classroom demo · <a href="https://clebervisconti.com">clebervisconti.com</a></span>
   </footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/controls/OrbitControls.js"></script>
-  <script src="/static/js/bgfx.js?v=8"></script>
-  <script src="/static/js/viz3d.js?v=8"></script>
-  <script src="/static/js/viz.js?v=8"></script>
+  <script src="/static/js/bgfx.js?v=9"></script>
+  <script src="/static/js/viz.js?v=9"></script>
 </body>
 </html>

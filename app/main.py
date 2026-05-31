@@ -1,20 +1,15 @@
 """FastAPI backend for NeuraNetViz.
 
-Two model modes:
-
-  - "teaching"   - the small 3-block CNN trained from scratch on the 6
-                   CIFAR-10 animal classes (32x32). Honest for pedagogy,
-                   limited for real-world photos.
-  - "pretrained" - MobileNetV2 ImageNet weights (224x224). Probabilities
-                   over its 1000 classes are aggregated into our 6 buckets
-                   via app.imagenet_map.
+The UI now only exposes the `pretrained` MobileNetV2 mode — accurate on
+real-world animal photos. The `teaching` (from-scratch CIFAR-10 CNN) and
+`finetuned` modes are still implemented and reachable via ?mode= for
+anyone who wants to compare in the API, but they are no longer surfaced
+in the page.
 
 Endpoints
 ---------
 GET  /                              -> main inference page
-GET  /training                      -> training playback page
-GET  /api/architecture?mode=...     -> network architecture JSON for a mode
-GET  /api/training-history          -> recorded training metrics (teaching only)
+GET  /api/architecture?mode=...     -> network architecture JSON
 POST /api/predict?mode=...          -> classify image; activations + predictions
 GET  /api/health                    -> liveness probe
 """
@@ -56,7 +51,7 @@ class ShortCacheStatic(BaseHTTPMiddleware):
         path = request.url.path
         if path.startswith("/static/"):
             response.headers["Cache-Control"] = "public, max-age=60"
-        elif path in {"/", "/training"}:
+        elif path == "/":
             response.headers["Cache-Control"] = "no-cache"
         return response
 
@@ -340,20 +335,6 @@ def architecture(mode: Mode = Query("teaching")):
     return arch
 
 
-@app.get("/api/training-history")
-def training_history(mode: Mode = Query("teaching")):
-    file_for_mode = {
-        "teaching": "training_history.json",
-        "finetuned": "training_history_pretrained.json",
-    }
-    if mode not in file_for_mode:
-        raise HTTPException(404, f"no training history for mode={mode!r}")
-    path = MODELS / file_for_mode[mode]
-    if not path.exists():
-        raise HTTPException(404, f"training history not available for mode={mode!r}; run the corresponding training script")
-    return JSONResponse(json.loads(path.read_text()))
-
-
 @app.post("/api/predict")
 async def predict(
     image: UploadFile = File(...),
@@ -417,8 +398,3 @@ app.mount("/static", StaticFiles(directory=STATIC), name="static")
 @app.get("/")
 def index():
     return FileResponse(STATIC / "index.html")
-
-
-@app.get("/training")
-def training_page():
-    return FileResponse(STATIC / "training.html")
