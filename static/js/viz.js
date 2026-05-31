@@ -9,11 +9,16 @@
   const fmEl = $("featuremaps");
   const svg = $("network");
   const samples = $("samples");
+  const modeToggle = $("mode-toggle");
+  const imagenetTitle = $("imagenet-title");
+  const imagenetEl = $("imagenet-top");
 
   const SVG_NS = "http://www.w3.org/2000/svg";
 
   let arch = null;
   let nodes = []; // {layer, x, y, type}
+  let mode = "teaching";
+  let lastUploadedBlob = null;
 
   // ----- color per layer type (CV brand) -----
   // Verde Ascensão #28d600 is the accent; dim shades distinguish other types
@@ -32,7 +37,7 @@
 
   // ----- build the SVG network diagram -----
   async function buildNetwork() {
-    const resp = await fetch("/api/architecture");
+    const resp = await fetch(`/api/architecture?mode=${mode}`);
     arch = await resp.json();
     drawNetwork(arch);
   }
@@ -318,7 +323,7 @@
 
     setStatus("running forward pass…", "busy");
     const animPromise = animateForward();
-    const resp = await fetch("/api/predict", { method: "POST", body: fd });
+    const resp = await fetch(`/api/predict?mode=${mode}`, { method: "POST", body: fd });
     if (!resp.ok) {
       const t = await resp.text();
       setStatus(`error: ${t}`, "err");
@@ -333,7 +338,8 @@
     }
     renderPredictions(data.predictions);
     renderFeatureMaps(data.layers);
-    setStatus(`predicted ${data.predictions[0].label} (${(data.predictions[0].prob*100).toFixed(1)}%)`, "ok");
+    renderImagenetTop(data.imagenet_top);
+    setStatus(`predicted ${data.predictions[0].label} (${(data.predictions[0].prob*100).toFixed(1)}%) · ${mode}`, "ok");
   }
 
   function setStatus(msg, cls) {
@@ -364,8 +370,50 @@
       dz.classList.add("has-image");
     };
     reader.readAsDataURL(f);
+    lastUploadedBlob = f;
     predict(f);
   }
+
+  function renderImagenetTop(top) {
+    if (!top || !top.length) {
+      imagenetTitle.style.display = "none";
+      imagenetEl.innerHTML = "";
+      return;
+    }
+    imagenetTitle.style.display = "block";
+    imagenetEl.innerHTML = "";
+    top.forEach((p) => {
+      const li = document.createElement("li");
+      const pct = (p.prob * 100).toFixed(1);
+      const pretty = p.label.replace(/_/g, " ");
+      li.innerHTML = `<span class="label">${pretty}</span><span class="pct">${pct}%</span>`;
+      imagenetEl.appendChild(li);
+    });
+  }
+
+  // ----- mode toggle -----
+  async function switchMode(newMode) {
+    if (newMode === mode) return;
+    mode = newMode;
+    modeToggle.querySelectorAll(".mode-opt").forEach((b) => {
+      b.classList.toggle("active", b.dataset.mode === mode);
+      b.setAttribute("aria-selected", b.dataset.mode === mode ? "true" : "false");
+      b.disabled = true;
+    });
+    setStatus(`loading ${mode} model…`, "busy");
+    try {
+      await buildNetwork();
+      setStatus(`${mode} model ready · ${arch.input_size}×${arch.input_size} input`, "ok");
+      if (lastUploadedBlob) await predict(lastUploadedBlob);
+    } catch (e) {
+      setStatus(`failed to switch mode: ${e.message}`, "err");
+    } finally {
+      modeToggle.querySelectorAll(".mode-opt").forEach((b) => (b.disabled = false));
+    }
+  }
+  modeToggle.querySelectorAll(".mode-opt").forEach((b) => {
+    b.addEventListener("click", () => switchMode(b.dataset.mode));
+  });
 
   // ----- sample buttons -----
   const SAMPLES = ["bird","cat","deer","dog","frog","horse"];
