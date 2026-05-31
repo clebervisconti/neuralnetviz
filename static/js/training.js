@@ -42,23 +42,23 @@
   }
 
   function drawAxis(ctx, w, h, xLabel, yLabel) {
-    ctx.fillStyle = "#04060a";
+    ctx.fillStyle = "#1e1e1e";
     ctx.fillRect(0, 0, w, h);
     // grid
-    ctx.strokeStyle = "rgba(120,170,220,0.12)";
+    ctx.strokeStyle = "rgba(255,255,255,0.08)";
     ctx.lineWidth = 0.5;
     for (let i = 1; i < 5; i++) {
       const y = (h / 5) * i;
       ctx.beginPath(); ctx.moveTo(40, y); ctx.lineTo(w - 10, y); ctx.stroke();
     }
     // axes
-    ctx.strokeStyle = "#1d2a3d";
+    ctx.strokeStyle = "rgba(255,255,255,0.18)";
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(40, 10); ctx.lineTo(40, h - 24);
     ctx.lineTo(w - 10, h - 24);
     ctx.stroke();
-    ctx.fillStyle = "#6f829a";
+    ctx.fillStyle = "rgba(255,255,255,0.55)";
     ctx.font = "10px 'JetBrains Mono', monospace";
     ctx.fillText(xLabel, w - 60, h - 8);
     ctx.save();
@@ -99,9 +99,10 @@
     const max = Math.max(...batches.map((b) => b.loss), ...epochs.map((e) => e.loss)) * 1.05 || 2.0;
     const slice = batches.slice(0, cutoff);
     const epSlice = epochs.filter((e) => e.x <= (cutoff || 0));
-    drawSeries(ctx, w, h, slice, "x", "loss", "#00f0ff", max, true);
-    drawSeries(ctx, w, h, epSlice, "x", "loss", "#ff2bd6", max, true);
-    legend(ctx, w, [["train loss", "#00f0ff"], ["val loss", "#ff2bd6"]]);
+    // Train: full-saturation Verde Ascensão. Val: same hue, half opacity (dashed below)
+    drawSeries(ctx, w, h, slice, "x", "loss", "rgba(255,255,255,0.55)", max, false);
+    drawSeries(ctx, w, h, epSlice, "x", "loss", "#28d600", max, true);
+    legend(ctx, w, [["train loss", "rgba(255,255,255,0.55)"], ["val loss", "#28d600"]]);
   }
 
   function drawAcc(cutoff) {
@@ -116,9 +117,9 @@
     }));
     const slice = batches.slice(0, cutoff);
     const epSlice = epochs.filter((e) => e.x <= (cutoff || 0));
-    drawSeries(ctx, w, h, slice, "x", "acc", "#29ffa6", 1.0, true);
-    drawSeries(ctx, w, h, epSlice, "x", "acc", "#ffb547", 1.0, true);
-    legend(ctx, w, [["train acc", "#29ffa6"], ["val acc", "#ffb547"]]);
+    drawSeries(ctx, w, h, slice, "x", "acc", "rgba(255,255,255,0.55)", 1.0, false);
+    drawSeries(ctx, w, h, epSlice, "x", "acc", "#28d600", 1.0, true);
+    legend(ctx, w, [["train acc", "rgba(255,255,255,0.55)"], ["val acc", "#28d600"]]);
   }
 
   function legend(ctx, w, items) {
@@ -127,7 +128,7 @@
     items.forEach(([label, color]) => {
       ctx.fillStyle = color;
       ctx.fillRect(x, 14, 10, 4);
-      ctx.fillStyle = "#d6e4f5";
+      ctx.fillStyle = "#ffffff";
       ctx.fillText(label, x + 14, 20);
       x += 90;
     });

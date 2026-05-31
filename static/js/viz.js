@@ -15,17 +15,19 @@
   let arch = null;
   let nodes = []; // {layer, x, y, type}
 
-  // ----- color per layer type -----
+  // ----- color per layer type (CV brand) -----
+  // Verde Ascensão #28d600 is the accent; dim shades distinguish other types
+  // without introducing new hues (brand rule: single accent).
   const TYPE_COLOR = {
-    InputLayer: "#00f0ff",
-    Conv2D: "#7a5cff",
-    MaxPooling2D: "#ffb547",
-    GlobalAveragePooling2D: "#ffb547",
-    Dense: "#ff2bd6",
+    InputLayer: "#ffffff",
+    Conv2D: "#28d600",
+    MaxPooling2D: "rgba(40,214,0,0.55)",
+    GlobalAveragePooling2D: "rgba(40,214,0,0.55)",
+    Dense: "rgba(255,255,255,0.85)",
   };
   function colorFor(layer, isOutput) {
-    if (isOutput) return "#29ffa6";
-    return TYPE_COLOR[layer.type] || "#d6e4f5";
+    if (isOutput) return "#28d600";
+    return TYPE_COLOR[layer.type] || "#ffffff";
   }
 
   // ----- build the SVG network diagram -----
@@ -52,9 +54,9 @@
         </feMerge>
       </filter>
       <linearGradient id="edge" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0%" stop-color="#00f0ff" stop-opacity="0.0"/>
-        <stop offset="50%" stop-color="#00f0ff" stop-opacity="0.9"/>
-        <stop offset="100%" stop-color="#ff2bd6" stop-opacity="0.0"/>
+        <stop offset="0%" stop-color="#28d600" stop-opacity="0.0"/>
+        <stop offset="50%" stop-color="#28d600" stop-opacity="0.95"/>
+        <stop offset="100%" stop-color="#28d600" stop-opacity="0.0"/>
       </linearGradient>`;
     svg.appendChild(defs);
 
@@ -107,7 +109,7 @@
       for (const p of n.positions) {
         const circle = el("circle", {
           cx: p.x, cy: p.y, r: 7,
-          fill: "#0a1018",
+          fill: "#1e1e1e",
           stroke: c, "stroke-width": 1.8,
           filter: "url(#glow)",
           class: `node node-${i}`,
@@ -136,7 +138,7 @@
         x: n.positions[0].x,
         y: 46,
         "text-anchor": "middle",
-        fill: "#6f829a",
+        fill: "rgba(255,255,255,0.45)",
         "font-size": 9,
         "font-family": "JetBrains Mono, monospace",
       });
@@ -150,7 +152,7 @@
       const t = el("text", {
         x: p.x + 14,
         y: p.y + 4,
-        fill: "#d6e4f5",
+        fill: "#ffffff",
         "font-size": 11,
         "font-family": "JetBrains Mono, monospace",
         "letter-spacing": "0.1em",
@@ -166,8 +168,8 @@
     const ip = inp.positions[0];
     const rect = el("rect", {
       x: ip.x - 22, y: ip.y - 22, width: 44, height: 44,
-      fill: "rgba(0,240,255,0.05)",
-      stroke: "#00f0ff", "stroke-width": 1.4,
+      fill: "rgba(40,214,0,0.05)",
+      stroke: "#28d600", "stroke-width": 1.4,
       rx: 4, ry: 4,
       filter: "url(#glow)",
       class: "input-box",
@@ -214,8 +216,8 @@
     // light the input box
     const input = svg.querySelector(".input-box");
     if (input) {
-      input.setAttribute("fill", "rgba(0,240,255,0.25)");
-      setTimeout(() => input.setAttribute("fill", "rgba(0,240,255,0.05)"), 400);
+      input.setAttribute("fill", "rgba(40,214,0,0.25)");
+      setTimeout(() => input.setAttribute("fill", "rgba(40,214,0,0.05)"), 400);
     }
     for (let i = 0; i < nodes.length - 1; i++) {
       await pulseBetween(i, 320);
@@ -240,12 +242,12 @@
           const ctx = c.getContext("2d");
           const img = ctx.createImageData(hm.w, hm.h);
           for (let i = 0; i < hm.values.length; i++) {
-            const v = hm.values[i];
-            // colorize: cyan -> magenta gradient on intensity
-            img.data[i * 4 + 0] = v;          // R
-            img.data[i * 4 + 1] = Math.floor(v * 0.6); // G
-            img.data[i * 4 + 2] = 255 - Math.floor(v * 0.3); // B
-            img.data[i * 4 + 3] = 230;
+            const t = hm.values[i] / 255;
+            // dark Preto Neural -> Verde Ascensão ramp
+            img.data[i * 4 + 0] = Math.round(0x1e + (0x28 - 0x1e) * t);
+            img.data[i * 4 + 1] = Math.round(0x1e + (0xd6 - 0x1e) * t);
+            img.data[i * 4 + 2] = Math.round(0x1e + (0x00 - 0x1e) * t);
+            img.data[i * 4 + 3] = 235;
           }
           ctx.putImageData(img, 0, 0);
           row.appendChild(c);
@@ -259,11 +261,11 @@
         const ctx = c.getContext("2d");
         const img = ctx.createImageData(c.width, 1);
         layer.values.forEach((v, i) => {
-          const n = Math.max(0, Math.min(255, Math.floor((v / max) * 255)));
-          img.data[i * 4 + 0] = n;
-          img.data[i * 4 + 1] = Math.floor(n * 0.4);
-          img.data[i * 4 + 2] = 255 - Math.floor(n * 0.4);
-          img.data[i * 4 + 3] = 230;
+          const t = Math.max(0, Math.min(1, v / max));
+          img.data[i * 4 + 0] = Math.round(0x1e + (0x28 - 0x1e) * t);
+          img.data[i * 4 + 1] = Math.round(0x1e + (0xd6 - 0x1e) * t);
+          img.data[i * 4 + 2] = Math.round(0x1e + (0x00 - 0x1e) * t);
+          img.data[i * 4 + 3] = 235;
         });
         ctx.putImageData(img, 0, 0);
         row.appendChild(c);
@@ -292,17 +294,17 @@
     const topIdx = arch.classes.indexOf(top.label);
     const outNode = svg.querySelectorAll(`.node-${nodes.length - 1}`)[topIdx];
     if (outNode) {
-      outNode.setAttribute("fill", "#29ffa6");
+      outNode.setAttribute("fill", "#28d600");
       outNode.setAttribute("r", 10);
     }
     // highlight output text labels
     svg.querySelectorAll(".out-label").forEach((t) => {
       const idx = parseInt(t.dataset.idx, 10);
       if (idx === topIdx) {
-        t.setAttribute("fill", "#29ffa6");
+        t.setAttribute("fill", "#28d600");
         t.setAttribute("font-size", 13);
       } else {
-        t.setAttribute("fill", "#6f829a");
+        t.setAttribute("fill", "rgba(255,255,255,0.45)");
         t.setAttribute("font-size", 11);
       }
     });

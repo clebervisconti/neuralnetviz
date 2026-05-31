@@ -34,7 +34,7 @@
         const d2 = dx * dx + dy * dy;
         if (d2 < 18000) {
           const alpha = 1 - d2 / 18000;
-          ctx.strokeStyle = `rgba(0, 240, 255, ${alpha * 0.22})`;
+          ctx.strokeStyle = `rgba(40, 214, 0, ${alpha * 0.22})`;
           ctx.beginPath();
           ctx.moveTo(a.x, a.y);
           ctx.lineTo(b.x, b.y);
@@ -43,7 +43,7 @@
       }
     }
     // dots
-    ctx.fillStyle = "rgba(0, 240, 255, 0.6)";
+    ctx.fillStyle = "rgba(40, 214, 0, 0.65)";
     for (const n of nodes) {
       ctx.beginPath();
       ctx.arc(n.x, n.y, 1.4, 0, Math.PI * 2);
