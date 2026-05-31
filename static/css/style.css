@@ -299,8 +299,35 @@ main {
 #network3d {
   position: absolute; inset: 0;
   display: none;
+  border-radius: 8px;
+  overflow: hidden;
 }
 .net-stage[data-view="3d"] #network3d { display: block; }
+#network3d canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.net3d-hint {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(15, 18, 24, 0.85);
+  border: 1px solid var(--cv-border-strong);
+  font-family: var(--cv-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--cv-text-muted);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 5;
+}
+.net-stage[data-view="3d"] .net3d-hint { opacity: 1; }
 
 #network .node {
   cursor: pointer;

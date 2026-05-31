@@ -353,6 +353,7 @@
     if (data.preview) {
       preview.src = data.preview;
       dz.classList.add("has-image");
+      if (window.NNV3D) window.NNV3D.setInputImage(data.preview);
     }
     renderPredictions(data.predictions);
     renderFeatureMaps(data.layers);
