@@ -51,9 +51,18 @@
     </section>
 
     <section class="panel center" id="network-wrap">
-      <h2 class="panel-title">// NETWORK</h2>
-      <svg id="network" preserveAspectRatio="xMidYMid meet"></svg>
-      <div id="node-tooltip" class="node-tooltip" role="tooltip" aria-hidden="true"></div>
+      <div class="net-header">
+        <h2 class="panel-title">// NETWORK</h2>
+        <div class="view-toggle" id="view-toggle" role="tablist" aria-label="Network view">
+          <button class="view-opt active" data-view="2d" role="tab" aria-selected="true">2D</button>
+          <button class="view-opt" data-view="3d" role="tab" aria-selected="false">3D</button>
+        </div>
+      </div>
+      <div class="net-stage">
+        <svg id="network" preserveAspectRatio="xMidYMid meet"></svg>
+        <div id="network3d"></div>
+        <div id="node-tooltip" class="node-tooltip" role="tooltip" aria-hidden="true"></div>
+      </div>
       <div class="legend">
         <span><i class="dot c-input"></i>input</span>
         <span><i class="dot c-conv"></i>conv</span>
@@ -81,7 +90,10 @@
     <span>cleber visconti · ai/ml classroom demo · <a href="https://clebervisconti.com">clebervisconti.com</a></span>
   </footer>
 
-  <script src="/static/js/bgfx.js?v=5"></script>
-  <script src="/static/js/viz.js?v=5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="/static/js/bgfx.js?v=6"></script>
+  <script src="/static/js/viz3d.js?v=6"></script>
+  <script src="/static/js/viz.js?v=6"></script>
 </body>
 </html>

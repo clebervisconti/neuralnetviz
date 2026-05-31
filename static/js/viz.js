@@ -19,8 +19,11 @@
   let arch = null;
   let nodes = []; // {layer, x, y, type}
   let mode = "teaching";
+  let view = "2d";
   let lastUploadedBlob = null;
   let lastPrediction = null; // {predictions, layers}
+  const viewToggle = $("view-toggle");
+  const stage = document.querySelector(".net-stage");
 
   // ----- color per layer type (CV brand) -----
   // Verde Ascensão #28d600 is the accent; dim shades distinguish other types
@@ -47,7 +50,7 @@
   function drawNetwork(arch) {
     while (svg.firstChild) svg.removeChild(svg.firstChild);
 
-    const W = 900, H = 540;
+    const W = 960, H = 600;
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
 
     // defs: gradient + glow filter
@@ -69,14 +72,12 @@
 
     const layers = arch.layers;
     const N = layers.length;
-    const padX = 70;
+    const padX = 60;
     const colW = (W - padX * 2) / Math.max(1, N - 1);
 
     nodes = layers.map((layer, i) => {
       const isOutput = i === N - 1;
       const isInput = i === 0;
-      // node count visualized per layer: input is single image, output is class neurons,
-      // dense layers show a few neurons, conv layers show a few channels stacked vertically
       let count = 1;
       if (isInput) count = 1;
       else if (layer.type === "Dense") count = isOutput ? arch.classes.length : 6;
@@ -84,8 +85,12 @@
       else count = 3;
 
       const x = padX + i * colW;
-      const cy = H / 2;
-      const spread = Math.min(380, count * 36);
+      // top label area ~70px; legend area ~30px at the bottom of svg viewBox
+      const yTop = 80;
+      const yBottom = H - 40;
+      const cy = (yTop + yBottom) / 2;
+      const avail = yBottom - yTop;
+      const spread = Math.min(avail, count * 56);
       const positions = [];
       for (let k = 0; k < count; k++) {
         const y = cy + ((k - (count - 1) / 2) * (spread / Math.max(1, count - 1) || 0));
@@ -110,14 +115,15 @@
       }
     }
 
-    // nodes
+    // nodes — bigger now so a number fits inside
+    const R = 18;
     nodes.forEach((n, i) => {
       const c = colorFor(n.layer, n.isOutput);
       n.positions.forEach((p, pi) => {
         const circle = el("circle", {
-          cx: p.x, cy: p.y, r: 7,
+          cx: p.x, cy: p.y, r: R,
           fill: "#1e1e1e",
-          stroke: c, "stroke-width": 1.8,
+          stroke: c, "stroke-width": 1.6,
           filter: "url(#glow)",
           class: `node node-${i}`,
         });
@@ -127,15 +133,32 @@
         circle.addEventListener("mouseenter", onNodeHover);
         circle.addEventListener("mouseleave", hideTooltip);
         svg.appendChild(circle);
+
+        // text inside the node: filled in after each prediction
+        const t = el("text", {
+          x: p.x, y: p.y + 4,
+          "text-anchor": "middle",
+          fill: "rgba(255,255,255,0.55)",
+          "font-size": 11,
+          "font-family": "JetBrains Mono, monospace",
+          "font-weight": 500,
+          class: `node-text node-text-${i}`,
+          "pointer-events": "none",
+        });
+        t.dataset.layerIdx = String(i);
+        t.dataset.posIdx = String(pi);
+        t.textContent = n.isInput ? "IN" : "—";
+        svg.appendChild(t);
       });
-      // layer label
+
+      // layer label (type) + shape, tight against top
       const labelType = n.layer.type.replace("2D", "");
       const labelShape = Array.isArray(n.layer.output_shape)
         ? n.layer.output_shape.slice(1).filter((d) => d !== null && d !== "?").join("×")
         : "";
       const label = el("text", {
         x: n.positions[0].x,
-        y: 30,
+        y: 24,
         "text-anchor": "middle",
         fill: c,
         "font-size": 10,
@@ -147,7 +170,7 @@
 
       const shapeLabel = el("text", {
         x: n.positions[0].x,
-        y: 46,
+        y: 42,
         "text-anchor": "middle",
         fill: "rgba(255,255,255,0.45)",
         "font-size": 9,
@@ -157,14 +180,14 @@
       svg.appendChild(shapeLabel);
     });
 
-    // output class labels
+    // output class labels — pushed further right so they don't collide with bigger nodes
     const out = nodes[nodes.length - 1];
     out.positions.forEach((p, k) => {
       const t = el("text", {
-        x: p.x + 14,
+        x: p.x + 28,
         y: p.y + 4,
         fill: "#ffffff",
-        "font-size": 11,
+        "font-size": 12,
         "font-family": "JetBrains Mono, monospace",
         "letter-spacing": "0.1em",
         class: "out-label",
@@ -174,18 +197,6 @@
       svg.appendChild(t);
     });
 
-    // input thumbnail placeholder
-    const inp = nodes[0];
-    const ip = inp.positions[0];
-    const rect = el("rect", {
-      x: ip.x - 22, y: ip.y - 22, width: 44, height: 44,
-      fill: "rgba(40,214,0,0.05)",
-      stroke: "#28d600", "stroke-width": 1.4,
-      rx: 4, ry: 4,
-      filter: "url(#glow)",
-      class: "input-box",
-    });
-    svg.appendChild(rect);
   }
 
   function el(name, attrs) {
@@ -222,13 +233,13 @@
   }
 
   async function animateForward() {
-    // reset
-    svg.querySelectorAll(".node").forEach((n) => n.setAttribute("fill", "#0a1018"));
-    // light the input box
-    const input = svg.querySelector(".input-box");
-    if (input) {
-      input.setAttribute("fill", "rgba(40,214,0,0.25)");
-      setTimeout(() => input.setAttribute("fill", "rgba(40,214,0,0.05)"), 400);
+    svg.querySelectorAll(".node").forEach((n) => n.setAttribute("fill", "#1e1e1e"));
+    svg.querySelectorAll(".node-text").forEach((t) => (t.textContent = nodes[parseInt(t.dataset.layerIdx,10)].isInput ? "IN" : "—"));
+    // briefly flash the input node so the first pulse has a visible origin
+    const inputNode = svg.querySelector(".node-0");
+    if (inputNode) {
+      inputNode.setAttribute("fill", "rgba(40,214,0,0.35)");
+      setTimeout(() => inputNode.setAttribute("fill", "#1e1e1e"), 400);
     }
     for (let i = 0; i < nodes.length - 1; i++) {
       await pulseBetween(i, 320);
@@ -346,6 +357,8 @@
     renderPredictions(data.predictions);
     renderFeatureMaps(data.layers);
     renderImagenetTop(data.imagenet_top);
+    paintNodeScores(data);
+    if (window.NNV3D && view === "3d") window.NNV3D.updateScores(nodes, data, arch);
     hideTooltip();
     setStatus(`predicted ${data.predictions[0].label} (${(data.predictions[0].prob*100).toFixed(1)}%) · ${mode}`, "ok");
   }
@@ -411,6 +424,7 @@
     setStatus(`loading ${mode} model…`, "busy");
     try {
       await buildNetwork();
+      if (view === "3d" && window.NNV3D) window.NNV3D.mount("network3d", arch);
       setStatus(`${mode} model ready · ${arch.input_size}×${arch.input_size} input`, "ok");
       if (lastUploadedBlob) await predict(lastUploadedBlob);
     } catch (e) {
@@ -554,6 +568,99 @@
     if (!tooltip) return;
     tooltip.setAttribute("data-visible", "false");
     tooltip.setAttribute("aria-hidden", "true");
+  }
+
+  // ----- paint per-node score numbers after a prediction -----
+  // Output: probability % (e.g. "89%")
+  // Conv/pool: peak activation of the channel this dot maps to (e.g. "0.42")
+  // Dense: this unit's value (e.g. "1.8")
+  // Input: keeps "IN"
+  function paintNodeScores(data) {
+    if (!nodes.length) return;
+    const layerByName = {};
+    (data.layers || []).forEach((l) => (layerByName[l.name] = l));
+    nodes.forEach((n, i) => {
+      const ts = svg.querySelectorAll(`.node-text-${i}`);
+      const circles = svg.querySelectorAll(`.node-${i}`);
+      const stats = layerByName[n.layer.name];
+
+      ts.forEach((t, pi) => {
+        let text = "—";
+        let lit = 0; // 0..1 fill intensity
+        if (n.isOutput && arch) {
+          const cls = arch.classes[pi];
+          const entry = (data.predictions || []).find((p) => p.label === cls);
+          const prob = entry ? entry.prob : 0;
+          text = `${Math.round(prob * 100)}%`;
+          lit = prob;
+        } else if (n.isInput) {
+          text = "IN";
+          lit = 0.4;
+        } else if (stats) {
+          if (stats.heatmaps && stats.heatmaps[pi]) {
+            const hm = stats.heatmaps[pi];
+            const peak = Math.max(...hm.values) / 255;
+            text = peak.toFixed(2);
+            lit = peak;
+          } else if (stats.values && stats.values.length > pi) {
+            const v = stats.values[pi];
+            const max = Math.max(0.001, ...stats.values.map(Math.abs));
+            text = (v >= 10 || v <= -10) ? v.toFixed(1) : v.toFixed(2);
+            lit = Math.min(1, Math.abs(v) / max);
+          } else {
+            text = stats.max != null ? stats.max.toFixed(2) : "—";
+            lit = Math.min(1, (stats.mean || 0));
+          }
+        }
+        t.textContent = text;
+        t.setAttribute("fill", lit > 0.4 ? "#ffffff" : "rgba(255,255,255,0.6)");
+        // matching circle fill: dark→accent ramp based on activation strength
+        const c = circles[pi];
+        if (c) {
+          const baseColor = c.dataset.baseColor;
+          // mix from #1e1e1e (dark) towards baseColor at higher lit
+          const rgb = baseColor.startsWith("rgb") ? baseColor : hexToRgb(baseColor);
+          c.setAttribute("fill", rgbaFill(rgb, lit));
+        }
+      });
+    });
+  }
+
+  function hexToRgb(hex) {
+    const h = hex.replace("#", "");
+    return `rgb(${parseInt(h.substr(0,2),16)},${parseInt(h.substr(2,2),16)},${parseInt(h.substr(4,2),16)})`;
+  }
+  function rgbaFill(rgbStr, t) {
+    // map rgb(r,g,b) to a dark-tinted fill where t=0 is #1e1e1e and t=1 is rgba(r,g,b,0.65)
+    const m = rgbStr.match(/rgb[a]?\(([^)]+)\)/);
+    if (!m) return "#1e1e1e";
+    const [r, g, b] = m[1].split(",").slice(0, 3).map((x) => parseFloat(x));
+    const mr = Math.round(0x1e + (r - 0x1e) * t);
+    const mg = Math.round(0x1e + (g - 0x1e) * t);
+    const mb = Math.round(0x1e + (b - 0x1e) * t);
+    return `rgb(${mr}, ${mg}, ${mb})`;
+  }
+
+  // ----- 2D / 3D view toggle -----
+  async function switchView(newView) {
+    if (newView === view) return;
+    view = newView;
+    stage.setAttribute("data-view", view);
+    viewToggle.querySelectorAll(".view-opt").forEach((b) => {
+      b.classList.toggle("active", b.dataset.view === view);
+      b.setAttribute("aria-selected", b.dataset.view === view ? "true" : "false");
+    });
+    if (view === "3d" && window.NNV3D) {
+      window.NNV3D.mount("network3d", arch);
+      if (lastPrediction) window.NNV3D.updateScores(nodes, lastPrediction, arch);
+    } else if (view === "2d" && window.NNV3D) {
+      window.NNV3D.pause();
+    }
+  }
+  if (viewToggle) {
+    viewToggle.querySelectorAll(".view-opt").forEach((b) => {
+      b.addEventListener("click", () => switchView(b.dataset.view));
+    });
   }
 
   // ----- init -----
