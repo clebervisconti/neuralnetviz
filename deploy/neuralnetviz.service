@@ -1,0 +1,15 @@
+[Unit]
+Description=NeuraNetViz FastAPI app
+After=network.target
+
+[Service]
+Type=simple
+User=cyberpanel
+WorkingDirectory=/home/clebervisconti.com/public_html/neuralnetviz
+Environment="PATH=/home/clebervisconti.com/public_html/neuralnetviz/.venv/bin"
+ExecStart=/home/clebervisconti.com/public_html/neuralnetviz/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8801
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

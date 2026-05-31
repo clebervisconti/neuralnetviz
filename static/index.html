@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NeuraNetViz · Live Neural Network Visualizer</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <canvas id="bgfx"></canvas>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo-dot"></span>
+      <h1>NEURA<span class="accent">NET</span>VIZ</h1>
+    </div>
+    <nav>
+      <a class="nav-link active" href="/">Inference</a>
+      <a class="nav-link" href="/training">Training</a>
+      <a class="nav-link" href="https://github.com/clebervisconti/neuralnetviz" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="panel left">
+      <h2 class="panel-title">// INPUT</h2>
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="file" accept="image/*" hidden>
+        <div class="dz-inner">
+          <div class="dz-icon">⬆</div>
+          <p>drop animal image<br><span class="muted">or click to upload</span></p>
+        </div>
+        <img id="preview" alt="">
+      </div>
+
+      <div class="samples">
+        <p class="muted small">or try a sample:</p>
+        <div class="sample-row" id="samples"></div>
+      </div>
+
+      <div class="status" id="status">awaiting input…</div>
+    </section>
+
+    <section class="panel center" id="network-wrap">
+      <h2 class="panel-title">// NETWORK</h2>
+      <svg id="network" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="legend">
+        <span><i class="dot c-input"></i>input</span>
+        <span><i class="dot c-conv"></i>conv</span>
+        <span><i class="dot c-pool"></i>pool</span>
+        <span><i class="dot c-dense"></i>dense</span>
+        <span><i class="dot c-output"></i>output</span>
+      </div>
+    </section>
+
+    <section class="panel right">
+      <h2 class="panel-title">// OUTPUT</h2>
+      <ul class="predictions" id="predictions">
+        <li class="empty">run a prediction to see results</li>
+      </ul>
+
+      <h3 class="sub-title">// FEATURE MAPS</h3>
+      <div class="featuremaps" id="featuremaps"></div>
+    </section>
+  </main>
+
+  <footer>
+    <span>cleber visconti · ai/ml classroom demo · <a href="https://clebervisconti.com">clebervisconti.com</a></span>
+  </footer>
+
+  <script src="/static/js/bgfx.js"></script>
+  <script src="/static/js/viz.js"></script>
+</body>
+</html>

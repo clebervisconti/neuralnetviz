@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.DS_Store
+*.log
+# keep the trained model committed — it is small enough — so do NOT ignore models/
+.claude/

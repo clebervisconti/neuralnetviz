@@ -1,0 +1,105 @@
+{
+  "classes": [
+    "bird",
+    "cat",
+    "deer",
+    "dog",
+    "frog",
+    "horse"
+  ],
+  "layers": [
+    {
+      "name": "input_image",
+      "type": "InputLayer",
+      "output_shape": [
+        "?",
+        32,
+        32,
+        3
+      ],
+      "params": 0
+    },
+    {
+      "name": "conv1",
+      "type": "Conv2D",
+      "output_shape": [
+        "?",
+        32,
+        32,
+        16
+      ],
+      "params": 448
+    },
+    {
+      "name": "pool1",
+      "type": "MaxPooling2D",
+      "output_shape": [
+        "?",
+        16,
+        16,
+        16
+      ],
+      "params": 0
+    },
+    {
+      "name": "conv2",
+      "type": "Conv2D",
+      "output_shape": [
+        "?",
+        16,
+        16,
+        32
+      ],
+      "params": 4640
+    },
+    {
+      "name": "pool2",
+      "type": "MaxPooling2D",
+      "output_shape": [
+        "?",
+        8,
+        8,
+        32
+      ],
+      "params": 0
+    },
+    {
+      "name": "conv3",
+      "type": "Conv2D",
+      "output_shape": [
+        "?",
+        8,
+        8,
+        64
+      ],
+      "params": 18496
+    },
+    {
+      "name": "gap",
+      "type": "GlobalAveragePooling2D",
+      "output_shape": [
+        "?",
+        64
+      ],
+      "params": 0
+    },
+    {
+      "name": "dense1",
+      "type": "Dense",
+      "output_shape": [
+        "?",
+        64
+      ],
+      "params": 4160
+    },
+    {
+      "name": "output",
+      "type": "Dense",
+      "output_shape": [
+        "?",
+        6
+      ],
+      "params": 390
+    }
+  ]
+}
