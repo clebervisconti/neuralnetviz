@@ -251,8 +251,83 @@ main {
 .status.err  { color: #ff5470; border-left-color: #ff5470; background: rgba(255,84,112,0.08); }
 
 /* ----- network panel ----- */
-.center { display: flex; flex-direction: column; }
+.center { display: flex; flex-direction: column; position: relative; }
 #network { width: 100%; flex: 1; min-height: 540px; }
+
+#network .node {
+  cursor: pointer;
+  transition: r 0.15s, stroke-width 0.15s;
+}
+#network .node:hover {
+  stroke-width: 3;
+}
+
+.node-tooltip {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, calc(-100% - 12px));
+  background: rgba(15, 18, 24, 0.96);
+  border: 1px solid var(--cv-accent);
+  border-radius: 8px;
+  padding: 10px 14px;
+  min-width: 180px;
+  max-width: 260px;
+  box-shadow: var(--cv-glow), 0 12px 32px rgba(0,0,0,0.6);
+  z-index: 20;
+  transition: opacity 0.12s;
+  font-family: var(--cv-font-mono);
+  font-size: 11px;
+  color: var(--cv-text);
+  line-height: 1.45;
+}
+.node-tooltip[data-visible="true"] { opacity: 1; }
+.node-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--cv-accent);
+}
+.node-tooltip .nt-title {
+  font-family: var(--cv-font-heading);
+  font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--cv-accent);
+  margin-bottom: 6px;
+}
+.node-tooltip .nt-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 2px 0;
+  color: var(--cv-text-muted);
+}
+.node-tooltip .nt-row b {
+  color: var(--cv-text);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.node-tooltip .nt-bar {
+  margin-top: 6px;
+  height: 5px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.node-tooltip .nt-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--cv-accent);
+  box-shadow: 0 0 8px rgba(40,214,0,0.5);
+}
+.node-tooltip .nt-hint {
+  margin-top: 6px;
+  color: var(--cv-text-faint);
+  font-size: 10px;
+  font-family: var(--cv-font-body);
+}
 
 .legend {
   display: flex; gap: 18px; justify-content: center;

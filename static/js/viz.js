@@ -12,6 +12,7 @@
   const modeToggle = $("mode-toggle");
   const imagenetTitle = $("imagenet-title");
   const imagenetEl = $("imagenet-top");
+  const tooltip = $("node-tooltip");
 
   const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -19,6 +20,7 @@
   let nodes = []; // {layer, x, y, type}
   let mode = "teaching";
   let lastUploadedBlob = null;
+  let lastPrediction = null; // {predictions, layers}
 
   // ----- color per layer type (CV brand) -----
   // Verde Ascensão #28d600 is the accent; dim shades distinguish other types
@@ -111,7 +113,7 @@
     // nodes
     nodes.forEach((n, i) => {
       const c = colorFor(n.layer, n.isOutput);
-      for (const p of n.positions) {
+      n.positions.forEach((p, pi) => {
         const circle = el("circle", {
           cx: p.x, cy: p.y, r: 7,
           fill: "#1e1e1e",
@@ -120,8 +122,12 @@
           class: `node node-${i}`,
         });
         circle.dataset.baseColor = c;
+        circle.dataset.layerIdx = String(i);
+        circle.dataset.posIdx = String(pi);
+        circle.addEventListener("mouseenter", onNodeHover);
+        circle.addEventListener("mouseleave", hideTooltip);
         svg.appendChild(circle);
-      }
+      });
       // layer label
       const labelType = n.layer.type.replace("2D", "");
       const labelShape = Array.isArray(n.layer.output_shape)
@@ -332,6 +338,7 @@
     const data = await resp.json();
     await animPromise;
 
+    lastPrediction = data;
     if (data.preview) {
       preview.src = data.preview;
       dz.classList.add("has-image");
@@ -339,6 +346,7 @@
     renderPredictions(data.predictions);
     renderFeatureMaps(data.layers);
     renderImagenetTop(data.imagenet_top);
+    hideTooltip();
     setStatus(`predicted ${data.predictions[0].label} (${(data.predictions[0].prob*100).toFixed(1)}%) · ${mode}`, "ok");
   }
 
@@ -440,6 +448,112 @@
       });
       samples.appendChild(b);
     });
+  }
+
+  // ----- hover tooltip on network nodes -----
+  function onNodeHover(ev) {
+    const circle = ev.currentTarget;
+    const layerIdx = parseInt(circle.dataset.layerIdx, 10);
+    const posIdx = parseInt(circle.dataset.posIdx, 10);
+    const n = nodes[layerIdx];
+    if (!n) return;
+    showTooltip(circle, layerIdx, posIdx, n);
+  }
+
+  function fmt(x, digits) {
+    if (x === undefined || x === null || Number.isNaN(x)) return "—";
+    return Number(x).toFixed(digits);
+  }
+
+  function showTooltip(circle, layerIdx, posIdx, n) {
+    const wrap = $("network-wrap");
+    const wrapRect = wrap.getBoundingClientRect();
+    const r = circle.getBoundingClientRect();
+    const x = r.left - wrapRect.left + r.width / 2;
+    const y = r.top - wrapRect.top;
+
+    let html = "";
+    if (n.isOutput && lastPrediction && arch) {
+      // Each output dot is one class. The pos index maps directly to the
+      // class index because we drew the output positions in class order.
+      const classes = arch.classes;
+      const className = classes[posIdx] || `class ${posIdx}`;
+      const ranked = lastPrediction.predictions || [];
+      const entry = ranked.find((p) => p.label === className);
+      const prob = entry ? entry.prob : 0;
+      const pct = (prob * 100).toFixed(1);
+      const rank = ranked.findIndex((p) => p.label === className) + 1;
+      const rankStr = rank > 0 ? `#${rank} of ${ranked.length}` : "—";
+      html = `
+        <div class="nt-title">Output · ${className}</div>
+        <div class="nt-row"><span>probability</span><b>${pct}%</b></div>
+        <div class="nt-row"><span>rank</span><b>${rankStr}</b></div>
+        <div class="nt-bar"><span style="width:${pct}%"></span></div>
+        <div class="nt-hint">softmax score — confidence the input is "${className}"</div>`;
+    } else if (n.isInput) {
+      const size = (arch && arch.input_size) || "?";
+      html = `
+        <div class="nt-title">Input · ${n.layer.name}</div>
+        <div class="nt-row"><span>shape</span><b>${size}×${size}×3</b></div>
+        <div class="nt-hint">your image is resized to this size and normalized before the model sees it</div>`;
+    } else {
+      // Hidden layer — pull from lastPrediction.layers if available.
+      const layerName = n.layer.name;
+      const layerStats = (lastPrediction && lastPrediction.layers)
+        ? lastPrediction.layers.find((l) => l.name === layerName)
+        : null;
+      const shape = n.layer.output_shape
+        ? n.layer.output_shape.slice(1).filter((d) => d !== null && d !== "?").join("×")
+        : "—";
+      let body = `
+        <div class="nt-row"><span>shape</span><b>${shape}</b></div>`;
+      if (layerStats) {
+        const mean = fmt(layerStats.mean, 3);
+        const max = fmt(layerStats.max, 3);
+        const min = fmt(layerStats.min, 3);
+        const topCh = layerStats.heatmaps && layerStats.heatmaps[0]
+          ? `ch ${layerStats.heatmaps[0].channel}`
+          : (layerStats.values ? `unit ${argmax(layerStats.values)}` : "—");
+        // map the dot's position index to a sample channel/unit for richer info
+        let perDot = "";
+        if (layerStats.heatmaps && layerStats.heatmaps[posIdx]) {
+          const hm = layerStats.heatmaps[posIdx];
+          const peak = Math.max(...hm.values) / 255;
+          perDot = `<div class="nt-row"><span>this node · ch ${hm.channel}</span><b>peak ${fmt(peak, 2)}</b></div>`;
+        } else if (layerStats.values && layerStats.values.length > posIdx) {
+          perDot = `<div class="nt-row"><span>this node · unit ${posIdx}</span><b>${fmt(layerStats.values[posIdx], 3)}</b></div>`;
+        }
+        body += `
+          ${perDot}
+          <div class="nt-row"><span>mean act.</span><b>${mean}</b></div>
+          <div class="nt-row"><span>max act.</span><b>${max}</b></div>
+          <div class="nt-row"><span>min act.</span><b>${min}</b></div>
+          <div class="nt-row"><span>top</span><b>${topCh}</b></div>`;
+      } else {
+        body += `<div class="nt-hint">run a prediction to see activation scores</div>`;
+      }
+      html = `<div class="nt-title">${n.layer.type.replace("2D", "")} · ${layerName}</div>${body}`;
+    }
+
+    tooltip.innerHTML = html;
+    // position; clamp so it stays inside the wrap
+    const maxX = wrapRect.width - 20;
+    tooltip.style.left = `${Math.min(Math.max(20, x), maxX)}px`;
+    tooltip.style.top = `${Math.max(8, y)}px`;
+    tooltip.setAttribute("data-visible", "true");
+    tooltip.setAttribute("aria-hidden", "false");
+  }
+
+  function argmax(arr) {
+    let bi = 0, bv = -Infinity;
+    for (let i = 0; i < arr.length; i++) if (arr[i] > bv) { bv = arr[i]; bi = i; }
+    return bi;
+  }
+
+  function hideTooltip() {
+    if (!tooltip) return;
+    tooltip.setAttribute("data-visible", "false");
+    tooltip.setAttribute("aria-hidden", "true");
   }
 
   // ----- init -----
