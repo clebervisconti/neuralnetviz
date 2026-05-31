@@ -20,15 +20,26 @@
       "params": 0
     },
     {
-      "name": "conv1",
+      "name": "conv1a",
       "type": "Conv2D",
       "output_shape": [
         "?",
         32,
         32,
-        16
+        32
       ],
-      "params": 448
+      "params": 896
+    },
+    {
+      "name": "conv1b",
+      "type": "Conv2D",
+      "output_shape": [
+        "?",
+        32,
+        32,
+        32
+      ],
+      "params": 9248
     },
     {
       "name": "pool1",
@@ -37,20 +48,31 @@
         "?",
         16,
         16,
-        16
+        32
       ],
       "params": 0
     },
     {
-      "name": "conv2",
+      "name": "conv2a",
       "type": "Conv2D",
       "output_shape": [
         "?",
         16,
         16,
-        32
+        64
       ],
-      "params": 4640
+      "params": 18496
+    },
+    {
+      "name": "conv2b",
+      "type": "Conv2D",
+      "output_shape": [
+        "?",
+        16,
+        16,
+        64
+      ],
+      "params": 36928
     },
     {
       "name": "pool2",
@@ -59,27 +81,38 @@
         "?",
         8,
         8,
-        32
+        64
       ],
       "params": 0
     },
     {
-      "name": "conv3",
+      "name": "conv3a",
       "type": "Conv2D",
       "output_shape": [
         "?",
         8,
         8,
-        64
+        128
       ],
-      "params": 18496
+      "params": 73856
+    },
+    {
+      "name": "conv3b",
+      "type": "Conv2D",
+      "output_shape": [
+        "?",
+        8,
+        8,
+        128
+      ],
+      "params": 147584
     },
     {
       "name": "gap",
       "type": "GlobalAveragePooling2D",
       "output_shape": [
         "?",
-        64
+        128
       ],
       "params": 0
     },
@@ -88,9 +121,9 @@
       "type": "Dense",
       "output_shape": [
         "?",
-        64
+        128
       ],
-      "params": 4160
+      "params": 16512
     },
     {
       "name": "output",
@@ -99,7 +132,7 @@
         "?",
         6
       ],
-      "params": 390
+      "params": 774
     }
   ]
 }
