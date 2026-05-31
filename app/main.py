@@ -41,7 +41,7 @@ ROOT = Path(__file__).resolve().parent.parent
 MODELS = ROOT / "models"
 STATIC = ROOT / "static"
 
-Mode = Literal["teaching", "pretrained"]
+Mode = Literal["teaching", "pretrained", "finetuned"]
 
 app = FastAPI(title="NeuraNetViz", version="0.2.0")
 
@@ -203,12 +203,83 @@ def _load_pretrained() -> ModelBundle:
     )
 
 
+def _load_finetuned() -> ModelBundle:
+    """The locally fine-tuned MobileNetV2 (head-only then last-blocks unfreeze)
+    on the 6 CIFAR-10 animal classes, 96x96 inputs. Trained by train_pretrained.py."""
+    from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
+
+    model_path = MODELS / "animal_mobilenet.keras"
+    if not model_path.exists():
+        raise RuntimeError(
+            f"Fine-tuned model not found at {model_path}. Run `python train_pretrained.py` first."
+        )
+    model = tf.keras.models.load_model(model_path)
+
+    # The base MobileNetV2 is nested inside `model` as a single sub-model layer
+    # (Keras wraps `base(inputs)` as one layer with the base's name). Reach in to
+    # grab landmark layers for the activation probe + arch viz.
+    base = None
+    for l in model.layers:
+        if isinstance(l, tf.keras.Model) and "mobilenet" in l.name.lower():
+            base = l
+            break
+    if base is None:
+        # Fallback: treat the whole model as flat
+        base = model
+
+    landmark_candidates = [
+        "Conv1", "block_3_expand", "block_6_expand",
+        "block_10_expand", "block_13_expand", "Conv_1",
+    ]
+    available = {l.name for l in base.layers}
+    wanted_in_base = [n for n in landmark_candidates if n in available]
+    # Also expose the head GAP + Dense from the outer model
+    head_names = [l.name for l in model.layers if l.name in {"head_gap", "output"}]
+
+    # Build probe model that returns each landmark's activation. To get
+    # intermediate activations from a nested base, we need to lift them into
+    # the outer functional model.
+    base_outputs = [base.get_layer(n).output for n in wanted_in_base]
+    probe_base = tf.keras.Model(inputs=base.input, outputs=base_outputs, name="mobilenet_probe_inner")
+
+    inner_acts = probe_base(model.input)
+    if not isinstance(inner_acts, list):
+        inner_acts = [inner_acts]
+    head_acts = [model.get_layer(n).output for n in head_names]
+    activation_model = tf.keras.Model(
+        inputs=model.input,
+        outputs=inner_acts + head_acts,
+        name="finetuned_probe",
+    )
+
+    arch = json.loads((MODELS / "architecture_pretrained.json").read_text())
+
+    def preprocess(image_bytes: bytes) -> tuple[np.ndarray, str]:
+        img = Image.open(io.BytesIO(image_bytes)).convert("RGB").resize((96, 96))
+        arr = preprocess_input(np.asarray(img, dtype=np.float32))
+        buf = io.BytesIO()
+        img.resize((192, 192), Image.LANCZOS).save(buf, format="PNG")
+        encoded = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+        return arr[None, ...], encoded
+
+    return ModelBundle(
+        model=model,
+        activation_model=activation_model,
+        probe_layer_names=wanted_in_base + head_names,
+        arch=arch,
+        input_size=96,
+        preprocess_fn=preprocess,
+    )
+
+
 def _get_bundle(mode: Mode) -> ModelBundle:
     if mode not in _bundles:
         if mode == "teaching":
             _bundles[mode] = _load_teaching()
         elif mode == "pretrained":
             _bundles[mode] = _load_pretrained()
+        elif mode == "finetuned":
+            _bundles[mode] = _load_finetuned()
         else:
             raise HTTPException(400, f"unknown mode: {mode}")
     return _bundles[mode]
@@ -257,7 +328,7 @@ def _activation_summary(act: np.ndarray) -> dict:
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "modes": ["teaching", "pretrained"]}
+    return {"status": "ok", "modes": ["teaching", "pretrained", "finetuned"]}
 
 
 @app.get("/api/architecture")
@@ -270,10 +341,16 @@ def architecture(mode: Mode = Query("teaching")):
 
 
 @app.get("/api/training-history")
-def training_history():
-    path = MODELS / "training_history.json"
+def training_history(mode: Mode = Query("teaching")):
+    file_for_mode = {
+        "teaching": "training_history.json",
+        "finetuned": "training_history_pretrained.json",
+    }
+    if mode not in file_for_mode:
+        raise HTTPException(404, f"no training history for mode={mode!r}")
+    path = MODELS / file_for_mode[mode]
     if not path.exists():
-        raise HTTPException(404, "training history not available; run train.py")
+        raise HTTPException(404, f"training history not available for mode={mode!r}; run the corresponding training script")
     return JSONResponse(json.loads(path.read_text()))
 
 

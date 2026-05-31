@@ -11,29 +11,53 @@
   let history = null;
   let playing = false;
   let step = 0;
+  let mode = "teaching";
 
   async function load() {
-    const resp = await fetch("/api/training-history");
+    playing = false;
+    step = 0;
+    history = null;
+    tStatus.textContent = `loading ${mode}…`;
+    const resp = await fetch(`/api/training-history?mode=${mode}`);
     if (!resp.ok) {
-      tStatus.textContent = "no training history available — run train.py";
+      tStatus.textContent = `no training history for ${mode} — run the matching training script`;
+      drawCharts(0);
+      tbody.innerHTML = "";
       return;
     }
     history = await resp.json();
     drawCharts(0);
     fillTable();
-    tStatus.textContent = `loaded ${history.batches.length} batch samples / ${history.epochs.length} epochs`;
+    const phases = history.phases ? ` (${history.phases.map(p => p.name).join(" → ")})` : "";
+    tStatus.textContent = `loaded ${history.batches.length} batch samples / ${history.epochs.length} epochs${phases}`;
+  }
+
+  const histToggle = document.getElementById("hist-mode");
+  if (histToggle) {
+    histToggle.querySelectorAll(".mode-opt").forEach((b) => {
+      b.addEventListener("click", () => {
+        if (b.dataset.mode === mode) return;
+        mode = b.dataset.mode;
+        histToggle.querySelectorAll(".mode-opt").forEach((x) => {
+          x.classList.toggle("active", x.dataset.mode === mode);
+          x.setAttribute("aria-selected", x.dataset.mode === mode ? "true" : "false");
+        });
+        load();
+      });
+    });
   }
 
   function fillTable() {
     tbody.innerHTML = "";
-    for (const e of history.epochs) {
+    history.epochs.forEach((e, i) => {
       const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${e.epoch + 1}</td><td>${e.loss.toFixed(4)}</td>
+      const phase = e.phase ? `<span class="muted small">${e.phase}</span> ` : "";
+      tr.innerHTML = `<td>${phase}${i + 1}</td><td>${e.loss.toFixed(4)}</td>
         <td>${(e.accuracy*100).toFixed(2)}%</td>
         <td>${e.val_loss.toFixed(4)}</td>
         <td>${(e.val_accuracy*100).toFixed(2)}%</td>`;
       tbody.appendChild(tr);
-    }
+    });
   }
 
   function drawCharts(cutoff) {

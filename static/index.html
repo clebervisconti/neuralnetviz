@@ -20,8 +20,9 @@
     </div>
     <nav>
       <div class="mode-toggle" id="mode-toggle" role="tablist" aria-label="Model mode">
-        <button class="mode-opt active" data-mode="teaching" role="tab" aria-selected="true">Teaching · CIFAR-10</button>
-        <button class="mode-opt" data-mode="pretrained" role="tab" aria-selected="false">Pretrained · MobileNetV2</button>
+        <button class="mode-opt active" data-mode="teaching" role="tab" aria-selected="true" title="Small CNN trained from scratch on 32x32 CIFAR-10. Pedagogy first.">Teaching · CIFAR-10</button>
+        <button class="mode-opt" data-mode="finetuned" role="tab" aria-selected="false" title="MobileNetV2 fine-tuned locally on the 6 CIFAR-10 animals @ 96x96. Direct 6-way output.">Fine-tuned · MobileNetV2</button>
+        <button class="mode-opt" data-mode="pretrained" role="tab" aria-selected="false" title="MobileNetV2 ImageNet weights @ 224x224; 1000-way softmax aggregated into 6 buckets. Best on real photos.">Pretrained · ImageNet</button>
       </div>
       <a class="nav-link active" href="/">Inference</a>
       <a class="nav-link" href="/training">Training</a>
@@ -79,7 +80,7 @@
     <span>cleber visconti · ai/ml classroom demo · <a href="https://clebervisconti.com">clebervisconti.com</a></span>
   </footer>
 
-  <script src="/static/js/bgfx.js?v=3"></script>
-  <script src="/static/js/viz.js?v=3"></script>
+  <script src="/static/js/bgfx.js?v=4"></script>
+  <script src="/static/js/viz.js?v=4"></script>
 </body>
 </html>

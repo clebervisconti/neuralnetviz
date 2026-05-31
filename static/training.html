@@ -33,6 +33,11 @@
         every point is a real batch / epoch metric captured during training.
       </p>
 
+      <div class="mode-toggle" id="hist-mode" role="tablist" aria-label="Training history mode" style="margin-bottom: 18px;">
+        <button class="mode-opt active" data-mode="teaching" role="tab" aria-selected="true">From-scratch CNN</button>
+        <button class="mode-opt" data-mode="finetuned" role="tab" aria-selected="false">MobileNetV2 fine-tune</button>
+      </div>
+
       <div class="train-grid">
         <div class="train-chart">
           <h3 class="sub-title">loss</h3>
@@ -63,7 +68,7 @@
     <span>cleber visconti · ai/ml classroom demo · <a href="https://clebervisconti.com">clebervisconti.com</a></span>
   </footer>
 
-  <script src="/static/js/bgfx.js?v=2"></script>
-  <script src="/static/js/training.js?v=2"></script>
+  <script src="/static/js/bgfx.js?v=4"></script>
+  <script src="/static/js/training.js?v=4"></script>
 </body>
 </html>

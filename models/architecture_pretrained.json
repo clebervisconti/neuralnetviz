@@ -1,0 +1,107 @@
+{
+  "classes": [
+    "bird",
+    "cat",
+    "deer",
+    "dog",
+    "frog",
+    "horse"
+  ],
+  "layers": [
+    {
+      "name": "input_image",
+      "type": "InputLayer",
+      "output_shape": [
+        "?",
+        96,
+        96,
+        3
+      ],
+      "params": 0
+    },
+    {
+      "name": "Conv1",
+      "type": "Conv2D",
+      "output_shape": [
+        "?",
+        48,
+        48,
+        16
+      ],
+      "params": 432
+    },
+    {
+      "name": "block_3_expand",
+      "type": "Conv2D",
+      "output_shape": [
+        "?",
+        24,
+        24,
+        96
+      ],
+      "params": 1536
+    },
+    {
+      "name": "block_6_expand",
+      "type": "Conv2D",
+      "output_shape": [
+        "?",
+        12,
+        12,
+        96
+      ],
+      "params": 1536
+    },
+    {
+      "name": "block_10_expand",
+      "type": "Conv2D",
+      "output_shape": [
+        "?",
+        6,
+        6,
+        192
+      ],
+      "params": 6144
+    },
+    {
+      "name": "block_13_expand",
+      "type": "Conv2D",
+      "output_shape": [
+        "?",
+        6,
+        6,
+        288
+      ],
+      "params": 13824
+    },
+    {
+      "name": "Conv_1",
+      "type": "Conv2D",
+      "output_shape": [
+        "?",
+        3,
+        3,
+        1280
+      ],
+      "params": 204800
+    },
+    {
+      "name": "head_gap",
+      "type": "GlobalAveragePooling2D",
+      "output_shape": [
+        "?",
+        1280
+      ],
+      "params": 0
+    },
+    {
+      "name": "output",
+      "type": "Dense",
+      "output_shape": [
+        "?",
+        6
+      ],
+      "params": 7686
+    }
+  ]
+}
