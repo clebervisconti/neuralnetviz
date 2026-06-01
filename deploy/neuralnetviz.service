@@ -1,15 +1,19 @@
+# Installed at /etc/systemd/system/neuralnetviz.service on the HostGator VPS.
+# OpenLiteSpeed reverse-proxies neuralnetviz.clebervisconti.com to 127.0.0.1:8801.
 [Unit]
 Description=NeuraNetViz FastAPI app
 After=network.target
 
 [Service]
 Type=simple
-User=cyberpanel
-WorkingDirectory=/home/clebervisconti.com/public_html/neuralnetviz
-Environment="PATH=/home/clebervisconti.com/public_html/neuralnetviz/.venv/bin"
-ExecStart=/home/clebervisconti.com/public_html/neuralnetviz/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8801
+User=root
+WorkingDirectory=/var/lib/neuralnetviz/repo
+Environment=PATH=/var/lib/neuralnetviz/venv/bin:/usr/bin
+ExecStart=/var/lib/neuralnetviz/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8801 --workers 1
 Restart=on-failure
 RestartSec=5
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
