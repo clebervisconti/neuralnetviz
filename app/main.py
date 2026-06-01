@@ -308,9 +308,18 @@ def _activation_summary(act: np.ndarray) -> dict:
             heatmaps.append({
                 "channel": int(ch),
                 "values": (norm * 255).astype(np.uint8).flatten().tolist(),
+                # Real activation magnitude of this channel (mean over its spatial
+                # plane). The `values` above are per-channel normalized for the
+                # heatmap image and so always peak at 255 — useless as a node
+                # score. `act` preserves the true strength so the diagram can color
+                # and label each Conv node by its actual activation, like GAP does.
+                "act": float(plane.mean()),
                 "h": int(h),
                 "w": int(w),
             })
+        # Layer-wide reference so the frontend can normalize channel strengths
+        # consistently (strongest channel in the layer -> full intensity).
+        summary["chan_act_max"] = max((hm["act"] for hm in heatmaps), default=0.0)
         summary["heatmaps"] = heatmaps
     elif a.ndim == 2:
         summary["values"] = a[0].astype(float).tolist()

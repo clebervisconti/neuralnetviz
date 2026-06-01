@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>NeuraNetViz · Live Neural Network Visualizer · Cleber Visconti</title>
   <link rel="icon" type="image/png" href="/static/img/cv-monogram.png">
-  <link rel="stylesheet" href="/static/css/style.css?v=9">
+  <link rel="stylesheet" href="/static/css/style.css?v=10">
 </head>
 <body class="cv-theme">
   <canvas id="bgfx"></canvas>
@@ -49,6 +49,18 @@
     <section class="panel center" id="network-wrap">
       <div class="net-header">
         <h2 class="panel-title">// NETWORK</h2>
+        <div class="net-controls" id="net-controls">
+          <label class="ctrl">
+            <span>node size</span>
+            <input type="range" id="ctrl-size" min="0.6" max="1.6" step="0.05" value="1">
+            <output id="ctrl-size-out">1.0×</output>
+          </label>
+          <label class="ctrl">
+            <span>contrast</span>
+            <input type="range" id="ctrl-contrast" min="0.5" max="2.5" step="0.05" value="1">
+            <output id="ctrl-contrast-out">1.0</output>
+          </label>
+        </div>
       </div>
       <div class="net-stage">
         <svg id="network" preserveAspectRatio="xMidYMid meet"></svg>
@@ -81,7 +93,7 @@
     <span>cleber visconti · ai/ml classroom demo · <a href="https://clebervisconti.com">clebervisconti.com</a></span>
   </footer>
 
-  <script src="/static/js/bgfx.js?v=9"></script>
-  <script src="/static/js/viz.js?v=9"></script>
+  <script src="/static/js/bgfx.js?v=10"></script>
+  <script src="/static/js/viz.js?v=10"></script>
 </body>
 </html>

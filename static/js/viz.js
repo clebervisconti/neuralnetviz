@@ -21,6 +21,10 @@
   let lastUploadedBlob = null;
   let lastPrediction = null; // {predictions, layers}
 
+  // base node radius (unscaled) + user-tunable display controls
+  const R_BASE = 18;
+  const CONTROLS = { size: 1.0, contrast: 1.0 };
+
   // ----- color per layer type (CV brand) -----
   // Verde Ascensão #28d600 is the accent; dim shades distinguish other types
   // without introducing new hues (brand rule: single accent).
@@ -111,8 +115,9 @@
       }
     }
 
-    // nodes — bigger now so a number fits inside
-    const R = 18;
+    // nodes — bigger now so a number fits inside. Initial radius scales with
+    // the size control; after a prediction each node is re-sized by strength.
+    const R = R_BASE * CONTROLS.size;
     nodes.forEach((n, i) => {
       const c = colorFor(n.layer, n.isOutput);
       n.positions.forEach((p, pi) => {
@@ -307,14 +312,11 @@
       predictionsEl.appendChild(li);
     });
 
-    // also flash the output node of the top class
+    // flash the winning class label green (node radius/fill is set by
+    // paintNodeScores, which sizes every output node by its probability —
+    // biggest probability = biggest node).
     const top = preds[0];
     const topIdx = arch.classes.indexOf(top.label);
-    const outNode = svg.querySelectorAll(`.node-${nodes.length - 1}`)[topIdx];
-    if (outNode) {
-      outNode.setAttribute("fill", "#28d600");
-      outNode.setAttribute("r", 10);
-    }
     // highlight output text labels
     svg.querySelectorAll(".out-label").forEach((t) => {
       const idx = parseInt(t.dataset.idx, 10);
@@ -502,8 +504,8 @@
         let perDot = "";
         if (layerStats.heatmaps && layerStats.heatmaps[posIdx]) {
           const hm = layerStats.heatmaps[posIdx];
-          const peak = Math.max(...hm.values) / 255;
-          perDot = `<div class="nt-row"><span>this node · ch ${hm.channel}</span><b>peak ${fmt(peak, 2)}</b></div>`;
+          const act = hm.act != null ? hm.act : (Math.max(...hm.values) / 255);
+          perDot = `<div class="nt-row"><span>this node · ch ${hm.channel}</span><b>act ${fmt(act, 2)}</b></div>`;
         } else if (layerStats.values && layerStats.values.length > posIdx) {
           perDot = `<div class="nt-row"><span>this node · unit ${posIdx}</span><b>${fmt(layerStats.values[posIdx], 3)}</b></div>`;
         }
@@ -568,10 +570,15 @@
           lit = 0.4;
         } else if (stats) {
           if (stats.heatmaps && stats.heatmaps[pi]) {
+            // Real per-channel activation magnitude (not the normalized heatmap,
+            // which always peaks at 1.0). Color/value scale by the strongest
+            // channel in this layer, mirroring how GAP nodes are rendered.
             const hm = stats.heatmaps[pi];
-            const peak = Math.max(...hm.values) / 255;
-            text = peak.toFixed(2);
-            lit = peak;
+            const act = hm.act != null ? hm.act : (Math.max(...hm.values) / 255);
+            const ref = stats.chan_act_max && stats.chan_act_max > 1e-9
+              ? stats.chan_act_max : 1;
+            text = Math.abs(act) >= 10 ? act.toFixed(1) : act.toFixed(2);
+            lit = Math.max(0, Math.min(1, act / ref));
           } else if (stats.values && stats.values.length > pi) {
             const v = stats.values[pi];
             const max = Math.max(0.001, ...stats.values.map(Math.abs));
@@ -582,18 +589,34 @@
             lit = Math.min(1, (stats.mean || 0));
           }
         }
+        // contrast (gamma) shaping so weak/strong activations separate more
+        const litShaped = n.isInput ? lit : Math.pow(Math.max(0, Math.min(1, lit)), CONTROLS.contrast);
         t.textContent = text;
-        t.setAttribute("fill", lit > 0.4 ? "#ffffff" : "rgba(255,255,255,0.6)");
-        // matching circle fill: dark→accent ramp based on activation strength
+        t.setAttribute("fill", litShaped > 0.4 ? "#ffffff" : "rgba(255,255,255,0.6)");
         const c = circles[pi];
         if (c) {
           const baseColor = c.dataset.baseColor;
-          // mix from #1e1e1e (dark) towards baseColor at higher lit
+          // mix from #1e1e1e (dark) towards baseColor at higher activation
           const rgb = baseColor.startsWith("rgb") ? baseColor : hexToRgb(baseColor);
-          c.setAttribute("fill", rgbaFill(rgb, lit));
+          c.setAttribute("fill", rgbaFill(rgb, litShaped));
+          // size each value-bearing node by its strength: strongest = largest.
+          // Input keeps the base radius; everything else scales with activation.
+          const r = n.isInput
+            ? R_BASE * CONTROLS.size
+            : nodeRadius(litShaped);
+          c.setAttribute("r", r);
+          // keep the score text readable inside small nodes
+          t.setAttribute("font-size", Math.max(8, Math.min(12, r * 0.62)));
         }
       });
     });
+  }
+
+  // Map an activation strength (0..1) to a node radius, scaled by the user's
+  // size control. Strongest activations are visibly larger than weak ones.
+  function nodeRadius(lit) {
+    const rMin = 10, rMax = 24;
+    return (rMin + (rMax - rMin) * Math.max(0, Math.min(1, lit))) * CONTROLS.size;
   }
 
   function hexToRgb(hex) {
@@ -611,9 +634,44 @@
     return `rgb(${mr}, ${mg}, ${mb})`;
   }
 
+  // ----- display tuning controls (node size + activation contrast) -----
+  function setupControls() {
+    const size = $("ctrl-size");
+    const sizeOut = $("ctrl-size-out");
+    const contrast = $("ctrl-contrast");
+    const contrastOut = $("ctrl-contrast-out");
+    if (!size || !contrast) return;
+
+    const apply = () => {
+      CONTROLS.size = parseFloat(size.value);
+      CONTROLS.contrast = parseFloat(contrast.value);
+      sizeOut.textContent = CONTROLS.size.toFixed(1) + "×";
+      contrastOut.textContent = CONTROLS.contrast.toFixed(1);
+      repaintNodes();
+    };
+    size.addEventListener("input", apply);
+    contrast.addEventListener("input", apply);
+    apply();
+  }
+
+  // Re-apply current control values to the diagram. If a prediction exists we
+  // recompute strength-based sizes/colors; otherwise we just rescale the idle
+  // nodes so the size control has an immediate, visible effect.
+  function repaintNodes() {
+    if (lastPrediction) {
+      paintNodeScores(lastPrediction);
+      return;
+    }
+    nodes.forEach((n, i) => {
+      svg.querySelectorAll(`.node-${i}`).forEach((c) =>
+        c.setAttribute("r", R_BASE * CONTROLS.size));
+    });
+  }
+
   // ----- init -----
   buildNetwork().then(() => {
     buildSamples();
+    setupControls();
     setStatus("ready — upload an image to begin");
   }).catch((e) => {
     setStatus(`failed to load architecture: ${e.message}`, "err");

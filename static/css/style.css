@@ -244,6 +244,57 @@ main {
 }
 .net-header .panel-title { margin: 0; }
 
+/* display-tuning controls (node size + activation contrast) */
+.net-controls {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+.net-controls .ctrl {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+.net-controls .ctrl output {
+  color: var(--accent);
+  min-width: 30px;
+  text-align: right;
+}
+.net-controls input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 92px;
+  height: 3px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  outline: none;
+}
+.net-controls input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 0 6px rgba(40, 214, 0, 0.7);
+}
+.net-controls input[type="range"]::-moz-range-thumb {
+  width: 13px; height: 13px;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 0 6px rgba(40, 214, 0, 0.7);
+}
+@media (max-width: 900px) {
+  .net-controls { display: none; }
+}
+
 /* The network SVG renders into THIS rectangle. Fixed aspect 16:10 matches
    the SVG viewBox so it fills cleanly without whitespace bands. */
 .net-stage {
