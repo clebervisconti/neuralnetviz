@@ -3,6 +3,27 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Splunk Observability RUM (Real User Monitoring) — loaded first so it
+       captures full page-load timing. Beacons go directly to Splunk us1.
+       The rumAccessToken is a public, client-side token by design. -->
+  <script src="https://cdn.signalfx.com/o11y-gdi-rum/latest/splunk-otel-web.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.signalfx.com/o11y-gdi-rum/latest/splunk-otel-web-session-recorder.js" crossorigin="anonymous"></script>
+  <script>
+    SplunkRum.init({
+      realm: 'us1',
+      rumAccessToken: 'RjVIHorIfRepXrd-KsUegQ',
+      applicationName: 'neuralnetviz',
+      deploymentEnvironment: 'production',
+      version: '0.2.0'
+    });
+    SplunkSessionRecorder.init({
+      app: 'neuralnetviz',
+      realm: 'us1',
+      rumAccessToken: 'RjVIHorIfRepXrd-KsUegQ'
+    });
+  </script>
+
   <title>NeuraNetViz · Live Neural Network Visualizer · Cleber Visconti</title>
   <link rel="icon" type="image/png" href="/static/img/cv-monogram.png">
   <link rel="stylesheet" href="/static/css/style.css?v=10">

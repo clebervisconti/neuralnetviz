@@ -4,3 +4,9 @@ tensorflow==2.15.1
 numpy==1.26.4
 pillow==10.4.0
 python-multipart==0.0.9
+
+# Splunk Observability APM (OpenTelemetry, Splunk distro).
+# Pinned to the 1.27.0 / 0.48b0 line so protobuf stays <5 — TensorFlow 2.15
+# requires protobuf<5 and newer OTel pulls protobuf>=6, which would break TF.
+splunk-opentelemetry==1.21.0
+opentelemetry-instrumentation-fastapi==0.48b0

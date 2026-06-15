@@ -9,7 +9,17 @@ Type=simple
 User=root
 WorkingDirectory=/var/lib/neuralnetviz/repo
 Environment=PATH=/var/lib/neuralnetviz/venv/bin:/usr/bin
-ExecStart=/var/lib/neuralnetviz/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8801 --workers 1
+# --- Splunk Observability APM (OpenTelemetry) ---
+# Traces + metrics are exported via OTLP/HTTP to the local splunk-otel-collector
+# (agent mode, 127.0.0.1:4318), which forwards them to Splunk Observability (us1).
+Environment=OTEL_SERVICE_NAME=neuralnetviz
+Environment=OTEL_RESOURCE_ATTRIBUTES=deployment.environment=production,service.version=0.2.0
+Environment=OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+Environment=OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+Environment=OTEL_TRACES_EXPORTER=otlp
+Environment=OTEL_METRICS_EXPORTER=otlp
+Environment=OTEL_LOGS_EXPORTER=none
+ExecStart=/var/lib/neuralnetviz/venv/bin/opentelemetry-instrument /var/lib/neuralnetviz/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8801 --workers 1
 Restart=on-failure
 RestartSec=5
 StandardOutput=journal
