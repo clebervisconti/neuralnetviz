@@ -22,19 +22,45 @@ input(32x32x3) → Conv2D(16) → MaxPool → Conv2D(32) → MaxPool → Conv2D(
 
 ## Run locally
 
+### Docker (recommended — matches production)
+
+The app ships as a container with an OpenTelemetry Collector sidecar that exports
+traces + metrics to Splunk Observability Cloud.
+
+```bash
+cp .env.example .env          # fill SPLUNK_ACCESS_TOKEN (realm defaults to us1)
+docker compose up --build     # app + otel-collector
+open http://localhost:8801
+```
+
+### Bare Python (no telemetry sidecar)
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-python train.py                # trains the CNN and writes models/
+python train.py                # only needed for the from-scratch CNN (teaching mode)
 uvicorn app.main:app --reload  # serves http://localhost:8000
 ```
 
 ## Deploy
 
-Behind a reverse proxy (OpenLiteSpeed on the HostGator VPS) with Cloudflare in front of
-`neuralnetviz.clebervisconti.com`. A systemd unit (`deploy/neuralnetviz.service`)
-runs the FastAPI app as a long-lived process; OLS proxies the subdomain to it.
+**Pipeline:** GitHub (source of truth) → Docker build + test locally → GHCR via GitHub
+Actions → `docker compose` on the HostGator VPS, behind OpenLiteSpeed + Cloudflare at
+`neuralnetviz.clebervisconti.com`.
+
+- **CI** — pushing to `main` builds the image and pushes
+  `ghcr.io/clebervisconti/neuralnetviz:{latest,<git-sha>}` (`.github/workflows/build-and-push.yml`).
+- **VPS** — the override `docker-compose.vps.yml` runs the GHCR image bound to
+  `127.0.0.1:8801` (OLS proxies the subdomain to it, unchanged). Deploy with
+  `deploy/neuralnetviz-deploy.sh [tag]`, which pulls + `up -d` + health-checks.
+- **Telemetry** — the `otel-collector` sidecar (`deploy/otel-collector-config.yaml`)
+  forwards app traces + metrics to Splunk O11y; browser RUM is in `static/index.html`.
+- **Rollback** — the legacy systemd unit (`deploy/neuralnetviz.service`) is kept; stop
+  the stack and `systemctl start neuralnetviz`, or redeploy a previous image tag.
+
+This flow is codified in the `app-deployment-orchestrator` skill as **Shape E
+(containerized app + OTel sidecar)**.
 
 ## Tech
 

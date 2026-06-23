@@ -1,0 +1,23 @@
+# Keep the build context small and reproducible. models/ IS shipped (small,
+# committed) — do not ignore it.
+.git/
+.gitignore
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.log
+.DS_Store
+.claude/
+.env
+.env.*
+!.env.example
+training_data/
+train.py
+train_pretrained.py
+README.md
+deploy/neuralnetviz.service
+docker-compose*.yml
+Dockerfile
+.dockerignore
+.github/

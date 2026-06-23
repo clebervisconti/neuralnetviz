@@ -1,0 +1,23 @@
+# VPS override — layered on top of docker-compose.yml ON THE SERVER ONLY.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.vps.yml pull
+#   docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d
+#
+# Differences vs the local base:
+#   - app runs the prebuilt GHCR image (no build on the RAM-tight VPS)
+#   - app port is bound to 127.0.0.1 so ONLY OpenLiteSpeed can reach it
+#     (Cloudflare → OLS reverse proxy → 127.0.0.1:8801, unchanged)
+#   - deployment.environment=production for Splunk O11y
+
+services:
+  app:
+    build: !reset null
+    image: ghcr.io/clebervisconti/neuralnetviz:${IMAGE_TAG:-latest}
+    pull_policy: always
+    environment:
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=production,service.version=0.2.0
+    ports: !override
+      - "127.0.0.1:8801:8801"
+
+  otel-collector:
+    pull_policy: always
