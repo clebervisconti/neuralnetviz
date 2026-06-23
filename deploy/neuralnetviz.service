@@ -1,8 +1,3 @@
-# LEGACY — superseded by the Docker Compose deploy (Dockerfile + docker-compose*.yml).
-# Kept as a one-command rollback: `systemctl start neuralnetviz` re-binds 127.0.0.1:8801
-# to the bare-metal uvicorn process after stopping the container stack. Do not run both
-# at once — they fight over port 8801. See deploy/neuralnetviz-deploy.sh for the new flow.
-#
 # Installed at /etc/systemd/system/neuralnetviz.service on the HostGator VPS.
 # OpenLiteSpeed reverse-proxies neuralnetviz.clebervisconti.com to 127.0.0.1:8801.
 [Unit]
@@ -21,11 +16,8 @@ Environment=OTEL_SERVICE_NAME=neuralnetviz
 Environment=OTEL_RESOURCE_ATTRIBUTES=deployment.environment=production,service.version=0.2.0
 Environment=OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
 Environment=OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
-# Name the HTTP exporter explicitly: splunk-opentelemetry 1.21.0 hardcodes the
-# generic `otlp` traces name to the gRPC exporter (which isn't installed), so
-# `otlp` fails auto-init. `otlp_proto_http` selects the shipped HTTP exporter.
-Environment=OTEL_TRACES_EXPORTER=otlp_proto_http
-Environment=OTEL_METRICS_EXPORTER=otlp_proto_http
+Environment=OTEL_TRACES_EXPORTER=otlp
+Environment=OTEL_METRICS_EXPORTER=otlp
 Environment=OTEL_LOGS_EXPORTER=none
 ExecStart=/var/lib/neuralnetviz/venv/bin/opentelemetry-instrument /var/lib/neuralnetviz/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8801 --workers 1
 Restart=on-failure
