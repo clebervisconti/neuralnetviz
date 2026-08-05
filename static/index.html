@@ -4,15 +4,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
+  <!-- RUM-BLOCK-START -->
   <!-- Splunk Observability RUM (Real User Monitoring) — loaded first so it
        captures full page-load timing. Beacons go directly to Splunk us1.
-       The rumAccessToken is a public, client-side token by design. -->
+       The token is a public, client-side value by design, but it is substituted
+       at request time from SPLUNK_RUM_TOKEN (sourced from the Keychain by the
+       launcher) so there is exactly one source of truth. If it is unset the
+       whole block is stripped and RUM is simply absent. -->
   <script src="https://cdn.signalfx.com/o11y-gdi-rum/latest/splunk-otel-web.js" crossorigin="anonymous"></script>
   <script src="https://cdn.signalfx.com/o11y-gdi-rum/latest/splunk-otel-web-session-recorder.js" crossorigin="anonymous"></script>
   <script>
     SplunkRum.init({
       realm: 'us1',
-      rumAccessToken: 'RjVIHorIfRepXrd-KsUegQ',
+      rumAccessToken: '__SPLUNK_RUM_TOKEN__',
       applicationName: 'neuralnetviz',
       deploymentEnvironment: 'production',
       version: '0.2.0'
@@ -20,9 +24,10 @@
     SplunkSessionRecorder.init({
       app: 'neuralnetviz',
       realm: 'us1',
-      rumAccessToken: 'RjVIHorIfRepXrd-KsUegQ'
+      rumAccessToken: '__SPLUNK_RUM_TOKEN__'
     });
   </script>
+  <!-- RUM-BLOCK-END -->
 
   <title>NeuraNetViz · Live Neural Network Visualizer · Cleber Visconti</title>
   <link rel="icon" type="image/png" href="/static/img/cv-monogram.png">

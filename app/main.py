@@ -18,12 +18,13 @@ from __future__ import annotations
 import base64
 import io
 import json
+import os
 from pathlib import Path
 from typing import Literal
 
 import numpy as np
 from fastapi import FastAPI, File, HTTPException, Query, Request, UploadFile
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -404,6 +405,29 @@ async def predict(
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
 
 
+# --- Splunk RUM token injection -------------------------------------------
+# The token used to be hardcoded in static/index.html, which drifted out of sync
+# with the Keychain (`cyberlabs-splunk-rum-token`) — the estate ended up with two
+# different values and no way to tell which was live. It is a public,
+# client-side value, so the point of centralising it is correctness, not secrecy.
+#
+# Substituted at request time from SPLUNK_RUM_TOKEN. When unset, the whole RUM
+# block is stripped so the page never ships a broken token or a placeholder.
+_RUM_START = "<!-- RUM-BLOCK-START -->"
+_RUM_END = "<!-- RUM-BLOCK-END -->"
+
+
+def _render_index() -> str:
+    html = (STATIC / "index.html").read_text(encoding="utf-8")
+    token = os.environ.get("SPLUNK_RUM_TOKEN", "").strip()
+    if token:
+        return html.replace("__SPLUNK_RUM_TOKEN__", token)
+    start, end = html.find(_RUM_START), html.find(_RUM_END)
+    if start != -1 and end != -1:
+        html = html[:start] + html[end + len(_RUM_END):]
+    return html
+
+
 @app.get("/")
 def index():
-    return FileResponse(STATIC / "index.html")
+    return HTMLResponse(_render_index())
